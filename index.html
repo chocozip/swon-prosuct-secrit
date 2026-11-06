@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -15,8 +14,8 @@
       margin: 0;
       padding: 20px;
       background: #f4f6f9;
-      font-family: "Malgun Gothic", sans-serif;
       color: #222;
+      font-family: "Malgun Gothic", Arial, sans-serif;
     }
 
     .container {
@@ -26,14 +25,14 @@
 
     h1 {
       text-align: center;
-      font-size: 25px;
-      margin-bottom: 25px;
+      font-size: 24px;
+      margin: 10px 0 25px;
     }
 
     .card {
-      background: white;
-      border-radius: 12px;
+      background: #fff;
       padding: 20px;
+      border-radius: 12px;
       margin-bottom: 18px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
@@ -41,21 +40,21 @@
     label {
       display: block;
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     select,
     input {
       width: 100%;
-      padding: 12px;
+      padding: 13px;
+      font-size: 16px;
       border: 1px solid #d5dbe3;
       border-radius: 8px;
-      font-size: 16px;
       background: white;
     }
 
     input {
-      margin-top: 12px;
+      margin-top: 5px;
     }
 
     .product-list {
@@ -65,12 +64,11 @@
     }
 
     .product-item {
-      border: 1px solid #e0e5ec;
-      border-radius: 10px;
       padding: 15px;
+      border: 1px solid #e0e5ec;
+      border-radius: 9px;
       cursor: pointer;
-      background: #fff;
-      transition: 0.15s;
+      background: white;
     }
 
     .product-item:hover {
@@ -80,10 +78,10 @@
 
     .product-category {
       display: inline-block;
-      background: #eaf2ff;
-      color: #2563eb;
       padding: 4px 8px;
       border-radius: 5px;
+      background: #eaf2ff;
+      color: #2563eb;
       font-size: 12px;
       margin-bottom: 7px;
     }
@@ -101,16 +99,15 @@
     }
 
     .price-result {
-      text-align: center;
       padding: 25px 15px;
       background: #f0f6ff;
       border-radius: 10px;
-      margin-top: 15px;
+      text-align: center;
     }
 
     .price-result .category {
-      font-size: 13px;
       color: #2563eb;
+      font-size: 13px;
       margin-bottom: 8px;
     }
 
@@ -126,17 +123,19 @@
       color: #1d4ed8;
     }
 
-    .price-result .details {
+    .details {
       font-size: 14px;
       color: #555;
-      margin-top: 12px;
-      line-height: 1.8;
+      line-height: 1.9;
+      margin-top: 15px;
+      white-space: pre-line;
     }
 
     .message {
       text-align: center;
-      color: #777;
       padding: 20px;
+      color: #777;
+      line-height: 1.7;
     }
 
     .error {
@@ -159,7 +158,7 @@
     #loginButton {
       width: 100%;
       margin-top: 15px;
-      padding: 12px;
+      padding: 13px;
       background: #2563eb;
       color: white;
       border: none;
@@ -201,20 +200,25 @@
 
 <body>
 
-  <!-- 비밀번호 화면 -->
+  <!-- 비밀번호 -->
   <div id="loginScreen">
     <h2>직원 전용 단가 조회</h2>
+
     <input
       type="password"
       id="passwordInput"
       placeholder="비밀번호 입력"
       autocomplete="off"
     >
-    <button id="loginButton" onclick="login()">접속하기</button>
+
+    <button id="loginButton" onclick="login()">
+      접속하기
+    </button>
+
     <div id="loginError"></div>
   </div>
 
-  <!-- 메인 화면 -->
+  <!-- 메인 -->
   <div id="mainScreen">
     <div class="container">
 
@@ -222,6 +226,7 @@
 
       <div class="card">
         <label for="customerSelect">거래처 선택</label>
+
         <select id="customerSelect">
           <option value="">거래처를 선택하세요</option>
         </select>
@@ -229,20 +234,25 @@
 
       <div class="card">
         <label for="searchInput">상품 검색</label>
+
         <input
           type="text"
           id="searchInput"
           placeholder="상품명 또는 바코드 검색"
         >
+
         <div id="productList" class="product-list">
-          <div class="message">거래처를 먼저 선택하세요.</div>
+          <div class="message">데이터를 불러와 주세요.</div>
         </div>
       </div>
 
       <div class="card">
         <label>조회 결과</label>
+
         <div id="priceDisplay">
-          <div class="message">상품을 선택하면 단가가 표시됩니다.</div>
+          <div class="message">
+            상품을 선택하면 거래처별 단가가 표시됩니다.
+          </div>
         </div>
       </div>
 
@@ -250,6 +260,10 @@
   </div>
 
   <script>
+    // ===================================
+    // 기본 설정
+    // ===================================
+
     const SHEET_ID =
       "19WlE1Iou4tsuqdb5qACWUheZeX3-F1ccNKs4_Iucep";
 
@@ -261,9 +275,12 @@
     let products = [];
     let customers = [];
     let customerRates = {};
-    let productHeaders = [];
+    let makerHeaders = [];
 
-    // 비밀번호 확인
+    // ===================================
+    // 비밀번호
+    // ===================================
+
     function login() {
       const password =
         document.getElementById("passwordInput").value;
@@ -287,15 +304,38 @@
         }
       });
 
-    // Google Sheets 데이터 불러오기
+    // ===================================
+    // 구글 시트 데이터 불러오기
+    // ===================================
+
     function loadSheet(sheetName) {
       return new Promise((resolve, reject) => {
+
+        const callbackName =
+          "sheetCallback_" +
+          Date.now() +
+          "_" +
+          Math.floor(Math.random() * 100000);
+
         const script = document.createElement("script");
 
-        const timeout = setTimeout(() => {
+        let completed = false;
+
+        const cleanup = () => {
           script.remove();
-          reject(new Error(sheetName + " 데이터 로딩 시간 초과"));
-        }, 15000);
+          delete window.google.visualization.Query[callbackName];
+        };
+
+        const timer = setTimeout(() => {
+          if (completed) return;
+
+          completed = true;
+          cleanup();
+
+          reject(new Error(
+            sheetName + " 시트 응답 시간 초과"
+          ));
+        }, 20000);
 
         window.google = window.google || {};
         window.google.visualization =
@@ -304,13 +344,27 @@
         window.google.visualization.Query =
           window.google.visualization.Query || {};
 
-        window.google.visualization.Query.setResponse =
+        window.google.visualization.Query[callbackName] =
           function(response) {
-            clearTimeout(timeout);
-            script.remove();
 
-            if (response && response.status === "error") {
-              reject(new Error("시트 데이터를 불러오지 못했습니다."));
+            if (completed) return;
+
+            completed = true;
+            clearTimeout(timer);
+            cleanup();
+
+            if (!response || !response.table) {
+              reject(new Error(
+                sheetName + " 시트 응답이 올바르지 않습니다."
+              ));
+              return;
+            }
+
+            if (response.status === "error") {
+              reject(new Error(
+                response.errors?.[0]?.detailed_message ||
+                sheetName + " 시트 읽기 오류"
+              ));
               return;
             }
 
@@ -322,120 +376,175 @@
           SHEET_ID +
           "/gviz/tq?sheet=" +
           encodeURIComponent(sheetName) +
-          "&tqx=out:json";
+          "&headers=1&tqx=out:json;responseHandler:" +
+          callbackName;
 
         script.src = url;
 
         script.onerror = function() {
-          clearTimeout(timeout);
-          script.remove();
-          reject(new Error(sheetName + " 시트 연결 실패"));
+          if (completed) return;
+
+          completed = true;
+          clearTimeout(timer);
+          cleanup();
+
+          reject(new Error(
+            sheetName + " 시트 연결에 실패했습니다."
+          ));
         };
 
         document.head.appendChild(script);
       });
     }
 
-    // 셀 값 가져오기
-    function getCellValue(row, index) {
+    // ===================================
+    // 셀 데이터 읽기
+    // ===================================
+
+    function getCell(row, index) {
       if (!row || !row.c || !row.c[index]) {
-        return "";
+        return null;
       }
 
-      const cell = row.c[index];
+      return row.c[index];
+    }
 
-      if (cell.v === null || cell.v === undefined) {
+    function getValue(row, index) {
+      const cell = getCell(row, index);
+
+      if (!cell || cell.v === null || cell.v === undefined) {
         return "";
       }
 
       return cell.v;
     }
 
-    // 헤더 정리
-    function normalizeHeader(value) {
-      return String(value || "")
-        .trim()
-        .replace(/\s+/g, " ");
+    function cleanText(value) {
+      return String(value ?? "").trim();
     }
 
-    // 데이터 로딩
+    // ===================================
+    // 상품 및 거래처 데이터 로딩
+    // ===================================
+
     async function loadData() {
-      const productListElement =
+
+      const list =
         document.getElementById("productList");
 
-      productListElement.innerHTML =
+      const display =
+        document.getElementById("priceDisplay");
+
+      list.innerHTML =
         '<div class="message">상품 데이터를 불러오는 중입니다.</div>';
 
       try {
-        // 반드시 순차적으로 로딩
-        const productTable = await loadSheet(PRODUCT_SHEET);
 
-        productHeaders = productTable.cols.map(col =>
-          normalizeHeader(col.label)
-        );
+        // 상품리스트: A~F열
+        const productTable =
+          await loadSheet(PRODUCT_SHEET);
 
         products = productTable.rows.map(row => {
-          const item = {};
 
-          productHeaders.forEach((header, index) => {
-            item[header] = getCellValue(row, index);
-          });
+          return {
+            barcode: cleanText(getValue(row, 0)),
+            category: cleanText(getValue(row, 1)),
+            maker: cleanText(getValue(row, 2)),
+            name: cleanText(getValue(row, 3)),
+            spec: cleanText(getValue(row, 4)),
+            retailPrice: getValue(row, 5)
+          };
 
-          return item;
-        });
+        }).filter(item =>
+          item.barcode ||
+          item.name
+        );
 
+        // 거래처별 단가: A열 거래처명, B열부터 메이커별 단가율
         const customerTable =
           await loadSheet(CUSTOMER_SHEET);
 
-        const customerHeaders =
-          customerTable.cols.map(col =>
-            normalizeHeader(col.label)
-          );
+        makerHeaders = customerTable.cols
+          .slice(1)
+          .map(col => cleanText(col.label));
 
         customers = [];
         customerRates = {};
 
         customerTable.rows.forEach(row => {
-          const customerName =
-            String(getCellValue(row, 0)).trim();
 
-          if (!customerName) {
-            return;
-          }
+          const customerName =
+            cleanText(getValue(row, 0));
+
+          if (!customerName) return;
 
           customers.push(customerName);
 
-          const rates = {};
+          customerRates[customerName] = {};
 
-          // A열은 거래처명, B열부터 메이커별 단가율
-          for (let i = 1; i < customerHeaders.length; i++) {
-            const maker = customerHeaders[i];
+          makerHeaders.forEach((maker, index) => {
 
-            if (!maker) {
-              continue;
-            }
+            if (!maker) return;
 
-            rates[maker] = getCellValue(row, i);
-          }
+            const cell = getCell(row, index + 1);
 
-          customerRates[customerName] = rates;
+            if (!cell) return;
+
+            // 표시값이 49.5%라면 표시값을 우선 사용
+            const rateValue =
+              cell.f !== undefined &&
+              cell.f !== null &&
+              String(cell.f).includes("%")
+                ? cell.f
+                : cell.v;
+
+            customerRates[customerName][maker] =
+              rateValue;
+          });
+
         });
 
         renderCustomers();
 
-        productListElement.innerHTML =
+        list.innerHTML =
           '<div class="message">거래처를 선택한 후 상품을 검색하세요.</div>';
 
+        display.innerHTML =
+          '<div class="message">상품을 선택하면 단가가 표시됩니다.</div>';
+
+        if (products.length === 0) {
+          list.innerHTML =
+            '<div class="message error">상품 데이터가 없습니다. 상품리스트 시트를 확인하세요.</div>';
+        }
+
+        if (customers.length === 0) {
+          throw new Error(
+            "거래처 데이터가 없습니다. 거래처별 단가 시트를 확인하세요."
+          );
+        }
+
       } catch (error) {
-        productListElement.innerHTML =
+
+        console.error("데이터 로딩 오류:", error);
+
+        list.innerHTML =
           '<div class="message error">' +
+          "데이터를 불러오지 못했습니다.<br>" +
           error.message +
-          '<br>스프레드시트 공유 설정을 확인하세요.</div>';
+          "<br><br>시트 공유 설정과 시트 이름을 확인하세요." +
+          "</div>";
+
+        display.innerHTML =
+          '<div class="message error">데이터 로딩에 실패했습니다.</div>';
       }
     }
 
-    // 거래처 목록 표시
+    // ===================================
+    // 거래처 목록
+    // ===================================
+
     function renderCustomers() {
+
       const select =
         document.getElementById("customerSelect");
 
@@ -443,6 +552,7 @@
         '<option value="">거래처를 선택하세요</option>';
 
       customers.forEach(customer => {
+
         const option = document.createElement("option");
 
         option.value = customer;
@@ -452,10 +562,10 @@
       });
     }
 
-    // 거래처 선택
     document
       .getElementById("customerSelect")
       .addEventListener("change", function() {
+
         document.getElementById("searchInput").value = "";
 
         document.getElementById("priceDisplay").innerHTML =
@@ -464,13 +574,16 @@
         renderProducts();
       });
 
-    // 상품 검색
     document
       .getElementById("searchInput")
       .addEventListener("input", renderProducts);
 
-    // 상품 목록 표시
+    // ===================================
+    // 상품 검색
+    // ===================================
+
     function renderProducts() {
+
       const customer =
         document.getElementById("customerSelect").value;
 
@@ -489,8 +602,9 @@
       }
 
       const filtered = products.filter(item => {
-        const name = String(item["상품명"] || "").toLowerCase();
-        const barcode = String(item["바코드"] || "").toLowerCase();
+
+        const name = item.name.toLowerCase();
+        const barcode = item.barcode.toLowerCase();
 
         return name.includes(keyword) ||
                barcode.includes(keyword);
@@ -505,50 +619,29 @@
       list.innerHTML = "";
 
       filtered.slice(0, 100).forEach(item => {
-        const div = document.createElement("div");
 
+        const div = document.createElement("div");
         div.className = "product-item";
 
-        const category =
-          item["상품분류"] || "";
+        const category = document.createElement("div");
+        category.className = "product-category";
+        category.textContent = item.category;
 
-        const name =
-          item["상품명"] || "";
+        const name = document.createElement("div");
+        name.className = "product-name";
+        name.textContent = item.name;
 
-        const spec =
-          item["규격"] || "";
+        const info = document.createElement("div");
+        info.className = "product-info";
 
-        const barcode =
-          item["바코드"] || "";
+        info.textContent =
+          "규격: " + item.spec +
+          " | 바코드: " + item.barcode +
+          " | 소매가: " + formatNumber(item.retailPrice) + "원";
 
-        const retailPrice =
-          Number(item["소매가"]) || 0;
-
-        const categoryElement =
-          document.createElement("div");
-
-        categoryElement.className = "product-category";
-        categoryElement.textContent = category;
-
-        const nameElement =
-          document.createElement("div");
-
-        nameElement.className = "product-name";
-        nameElement.textContent = name;
-
-        const infoElement =
-          document.createElement("div");
-
-        infoElement.className = "product-info";
-
-        infoElement.textContent =
-          "규격: " + spec +
-          " | 바코드: " + barcode +
-          " | 소매가: " + retailPrice.toLocaleString("ko-KR") + "원";
-
-        div.appendChild(categoryElement);
-        div.appendChild(nameElement);
-        div.appendChild(infoElement);
+        div.appendChild(category);
+        div.appendChild(name);
+        div.appendChild(info);
 
         div.addEventListener("click", function() {
           calculatePrice(item, customer);
@@ -558,92 +651,121 @@
       });
     }
 
-    // 단가율 변환
-    function parseRate(value) {
-      if (value === null || value === undefined || value === "") {
-        return null;
+    // ===================================
+    // 숫자 변환
+    // ===================================
+
+    function toNumber(value) {
+
+      if (typeof value === "number") {
+        return value;
       }
 
-      let rate;
+      const number = Number(
+        String(value ?? "")
+          .replace(/,/g, "")
+          .replace(/원/g, "")
+          .trim()
+      );
 
-      if (typeof value === "string") {
-        const text = value.trim();
-
-        if (text.endsWith("%")) {
-          rate = parseFloat(text.replace("%", ""));
-
-          if (isNaN(rate)) {
-            return null;
-          }
-
-          return rate / 100;
-        }
-
-        rate = parseFloat(text);
-      } else {
-        rate = Number(value);
-      }
-
-      if (isNaN(rate)) {
-        return null;
-      }
-
-      // 시트 값이 49.5라면 49.5%
-      // 시트 값이 0.495라면 49.5%
-      if (rate > 1) {
-        return rate / 100;
-      }
-
-      return rate;
+      return Number.isFinite(number) ? number : NaN;
     }
 
-    // 상품 단가 계산
+    function formatNumber(value) {
+      const number = toNumber(value);
+
+      if (!Number.isFinite(number)) {
+        return "0";
+      }
+
+      return Math.floor(number).toLocaleString("ko-KR");
+    }
+
+    // ===================================
+    // 단가율 변환
+    // ===================================
+
+    function parseRate(value) {
+
+      if (
+        value === null ||
+        value === undefined ||
+        value === ""
+      ) {
+        return null;
+      }
+
+      const text = String(value)
+        .trim()
+        .replace(/,/g, "");
+
+      if (text.includes("%")) {
+
+        const number = parseFloat(
+          text.replace("%", "")
+        );
+
+        return Number.isFinite(number)
+          ? number / 100
+          : null;
+      }
+
+      const number = Number(text);
+
+      if (!Number.isFinite(number)) {
+        return null;
+      }
+
+      // 49.5라면 49.5%
+      // 0.495라면 49.5%
+      return number > 1 ? number / 100 : number;
+    }
+
+    // ===================================
+    // 거래처별 상품 단가 계산
+    // ===================================
+
     function calculatePrice(item, customer) {
-      const maker =
-        normalizeHeader(item["메이커"]);
-
-      const retailPrice =
-        Number(item["소매가"]) || 0;
-
-      const category =
-        item["상품분류"] || "";
-
-      const name =
-        item["상품명"] || "";
-
-      const spec =
-        item["규격"] || "";
-
-      const barcode =
-        item["바코드"] || "";
-
-      const customerRate =
-        customerRates[customer];
-
-      const rateValue =
-        customerRate ? customerRate[maker] : null;
-
-      const rate = parseRate(rateValue);
 
       const display =
         document.getElementById("priceDisplay");
 
+      const maker = item.maker;
+
+      const retailPrice = toNumber(item.retailPrice);
+
       if (!maker) {
         display.innerHTML =
-          '<div class="message error">' +
-          '상품의 메이커 정보가 없습니다.</div>';
+          '<div class="message error">상품의 메이커 정보가 없습니다.</div>';
         return;
       }
+
+      if (!Number.isFinite(retailPrice)) {
+        display.innerHTML =
+          '<div class="message error">상품의 소매가를 확인할 수 없습니다.</div>';
+        return;
+      }
+
+      const rates = customerRates[customer];
+
+      if (!rates) {
+        display.innerHTML =
+          '<div class="message error">선택한 거래처의 단가 정보를 찾을 수 없습니다.</div>';
+        return;
+      }
+
+      const rateValue = rates[maker];
+      const rate = parseRate(rateValue);
 
       if (rate === null) {
         display.innerHTML =
           '<div class="message error">' +
           customer + " 거래처의 " + maker +
-          " 단가율을 찾을 수 없습니다.</div>";
+          " 단가율이 비어 있거나 올바르지 않습니다.</div>";
         return;
       }
 
-      // 소수점 이하 절삭: 반올림하지 않음
+      // 소수점 이하 절삭
       const finalPrice =
         Math.floor(retailPrice * rate);
 
@@ -652,58 +774,46 @@
           maximumFractionDigits: 4
         });
 
-      display.innerHTML = "";
-
-      const result =
-        document.createElement("div");
-
+      // 결과 표시
+      const result = document.createElement("div");
       result.className = "price-result";
 
-      const categoryElement =
-        document.createElement("div");
+      const category = document.createElement("div");
+      category.className = "category";
+      category.textContent = item.category;
 
-      categoryElement.className = "category";
-      categoryElement.textContent = category;
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = item.name;
 
-      const nameElement =
-        document.createElement("div");
-
-      nameElement.className = "name";
-      nameElement.textContent = name;
-
-      const priceElement =
-        document.createElement("div");
-
-      priceElement.className = "price";
-      priceElement.textContent =
+      const price = document.createElement("div");
+      price.className = "price";
+      price.textContent =
         finalPrice.toLocaleString("ko-KR") + "원";
 
-      const details =
-        document.createElement("div");
-
+      const details = document.createElement("div");
       details.className = "details";
 
       details.textContent =
         "거래처: " + customer +
-        "\n규격: " + spec +
-        "\n바코드: " + barcode +
-        "\n소매가: " + retailPrice.toLocaleString("ko-KR") + "원" +
+        "\n규격: " + item.spec +
+        "\n바코드: " + item.barcode +
+        "\n소매가: " + formatNumber(retailPrice) + "원" +
         "\n단가율: " + ratePercent + "%" +
-        "\n계산: " + retailPrice.toLocaleString("ko-KR") +
+        "\n계산: " + formatNumber(retailPrice) +
         " × " + ratePercent + "%" +
-        "\n소수점 이하 절삭 적용";
+        "\n소수점 이하 절삭";
 
-      details.style.whiteSpace = "pre-line";
-
-      result.appendChild(categoryElement);
-      result.appendChild(nameElement);
-      result.appendChild(priceElement);
+      result.appendChild(category);
+      result.appendChild(name);
+      result.appendChild(price);
       result.appendChild(details);
 
+      display.innerHTML = "";
       display.appendChild(result);
     }
+
   </script>
 
 </body>
 </html>
-```
