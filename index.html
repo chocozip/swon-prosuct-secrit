@@ -1,9 +1,754 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>전직 레벨업 재화 계산기</title><style>
-:root{color-scheme:dark;--bg:#10131a;--panel:#1a202b;--line:#303b4b;--text:#f3f5f8;--muted:#aeb8c8;--accent:#f5d90a}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;padding:24px}main{max-width:980px;margin:auto}h1{font-size:clamp(24px,4vw,34px);margin:0 0 8px}.intro{color:var(--muted);margin:0 0 24px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}h2{font-size:18px;margin:0 0 16px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}input,select{width:100%;background:#0e1218;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:11px;font-size:16px}.wide{grid-column:1/-1}.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.result{background:#0e1218;border:1px solid var(--line);padding:14px;border-radius:10px}.result span{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}.result strong{font-size:clamp(18px,3vw,26px);overflow-wrap:anywhere}.highlight{border-color:#817400}.highlight strong{color:var(--accent)}button{border:0;border-radius:9px;background:var(--accent);color:#171717;font-weight:700;padding:12px 18px;font-size:15px;cursor:pointer;margin-top:16px}button.secondary{background:#303b4b;color:var(--text);margin-left:8px}.note{font-size:12px;line-height:1.6;color:var(--muted);margin-top:12px}.status{font-size:14px;color:var(--accent);margin-top:10px}@media(max-width:680px){body{padding:14px}.grid,.fields,.results{grid-template-columns:1fr}.wide{grid-column:auto}}
-</style></head><body><main><h1>전직 레벨업 재화 계산기</h1><p class="intro">전직 차수와 레벨 범위, 보유 재화 및 소탕 열쇠를 입력해 필요 재화와 열쇠를 계산합니다.</p><div class="grid"><section class="panel"><h2>레벨 범위 및 보유 재화</h2><div class="fields"><div class="wide"><label for="tier">전직 차수</label><select id="tier"><option value="1">1차 전직 (레벨 1~80)</option><option value="2">2차 전직 (레벨 0~100)</option></select></div><div><label for="currentLevel">현재 전직 레벨</label><input id="currentLevel" type="number" min="1" max="80" value="35"></div><div><label for="targetLevel">목표 전직 레벨</label><input id="targetLevel" type="number" min="1" max="80" value="50"></div><div class="wide"><label for="owned">기존 보유 재화</label><input id="owned" type="number" min="0" value="0"></div></div></section><section class="panel"><h2>소탕 수급 재화</h2><div class="fields"><div><label for="towerReward">시련의 탑 소탕 1회 재화</label><input id="towerReward" type="number" min="0" value="0"></div><div><label for="towerKeys">시련의 탑 보유 열쇠</label><input id="towerKeys" type="number" min="0" value="0"></div><div><label for="dungeonReward">보물던전 1 소탕 1회 재화</label><input id="dungeonReward" type="number" min="0" value="0"></div><div><label for="dungeonKeys">보물던전 1 보유 열쇠</label><input id="dungeonKeys" type="number" min="0" value="0"></div></div></section></div><section class="panel" style="margin-top:16px"><h2>계산 결과</h2><div class="results"><div class="result"><span>현재 수급 가능 총 재화</span><strong id="totalAvailable">0</strong></div><div class="result"><span>목표 레벨까지 필요 재화</span><strong id="required">0</strong></div><div class="result"><span>부족 재화</span><strong id="shortage">0</strong></div><div class="result highlight"><span>추가로 필요한 보물던전 1 열쇠</span><strong id="keysNeeded">0개</strong></div></div><div class="status" id="status"></div><p class="note">필요 재화는 현재 레벨 다음 단계부터 목표 레벨까지 비용을 합산합니다. 추가 열쇠는 보유 재화와 입력한 소탕 열쇠의 수급량을 반영한 부족분을 보물던전 1 소탕 1회 재화로 나누어 올림합니다. 2차 전직은 제공된 비용이 있는 0~100레벨까지만 계산합니다.</p><button onclick="calculate()">계산하기</button><button class="secondary" onclick="resetValues()">초기화</button></section></main><script>
-const costs1=[1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,8000,10500,13000,15500,18000,20500,23000,25500,28000,30500,35000,39500,44000,48500,53000,57500,62000,66500,71000,75500,80000,90000,100000,110000,120000,130000,140000,150000,160000,170000,190000,210000,230000,250000,270000,290000,310000,330000,350000,370000,400000,450000,500000,550000,600000,650000,700000,750000,800000,1000000,1250000,1500000,1750000,2000000,2250000,2500000,2750000,3000000,3250000,3500000,4000000,4500000,5000000,5500000,6000000,6500000,7000000,7500000,8000000,8500000];
-const costs2=[1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,10000,11000,12000,13000,14000,15000,16000,17000,18000,19000,20000,25000,30000,35000,40000,45000,50000,55000,60000,65000,70000,75000,80000,85000,90000,95000,100000,105000,110000,115000,120000,125000,130000,135000,140000,145000,150000,155000,160000,165000,170000,175000,180000,185000,190000,195000,200000,210000,220000,230000,240000,250000,260000,270000,280000,290000,300000,310000,320000,330000,340000,350000,360000,370000,380000,390000,400000,410000,420000,430000,440000,450000,460000,470000,480000,490000,500000,510000,520000,530000,540000,550000,560000];
-const n=id=>Math.max(0,Number(document.getElementById(id).value)||0),fmt=n=>Math.floor(n).toLocaleString('ko-KR');function limits(){return document.getElementById('tier').value==='1'?{min:1,max:80,costs:costs1}:{min:0,max:100,costs:costs2}}function updateLimits(){let {min,max}=limits(),c=document.getElementById('currentLevel'),t=document.getElementById('targetLevel');c.min=t.min=min;c.max=t.max=max;c.value=Math.min(max,Math.max(min,Number(c.value)||min));t.value=Math.min(max,Math.max(Number(c.value),Number(t.value)||Number(c.value)));calculate()}
-function calculate(){let {min,max,costs}=limits(),cur=Math.floor(Number(document.getElementById('currentLevel').value)),target=Math.floor(Number(document.getElementById('targetLevel').value)),available=n('owned')+n('towerReward')*n('towerKeys')+n('dungeonReward')*n('dungeonKeys');if(cur<min||cur>max||target<cur||target>max){document.getElementById('status').textContent=`레벨 범위를 확인하세요. 현재 ${min}~${max}, 목표는 현재 레벨 이상이어야 합니다.`;['totalAvailable','required','shortage','keysNeeded'].forEach(id=>document.getElementById(id).textContent='—');return}let need=0;for(let level=cur+1;level<=target;level++){let cost=costs[document.getElementById('tier').value==='1'?level-1:level];if(cost===undefined){document.getElementById('status').textContent='해당 레벨 비용 데이터가 없습니다.';return}need+=cost}let short=Math.max(0,need-available),reward=n('dungeonReward'),keys=short===0?0:(reward>0?Math.ceil(short/reward):null);document.getElementById('totalAvailable').textContent=fmt(available);document.getElementById('required').textContent=fmt(need);document.getElementById('shortage').textContent=fmt(short);document.getElementById('keysNeeded').textContent=keys===null?'소탕 재화 입력 필요':fmt(keys)+'개';document.getElementById('status').textContent=short===0?'현재 수급 가능 재화로 목표 레벨까지 올릴 수 있습니다.':'현재 재화 기준으로 부족분을 추가 수급해야 합니다.'}
-function resetValues(){document.getElementById('tier').value='1';document.getElementById('currentLevel').value=1;document.getElementById('targetLevel').value=1;['owned','towerReward','towerKeys','dungeonReward','dungeonKeys'].forEach(id=>document.getElementById(id).value=0);updateLimits()}document.getElementById('tier').addEventListener('change',updateLimits);document.querySelectorAll('input').forEach(el=>el.addEventListener('input',calculate));calculate();
-</script></body></html>
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>거래처별 단가 조회</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, "Malgun Gothic", sans-serif;
+  background: #f3f5f8;
+  color: #222;
+}
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 24px;
+}
+
+header {
+  margin-bottom: 24px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.subtitle {
+  color: #777;
+  font-size: 14px;
+}
+
+.panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.panel-title {
+  font-size: 17px;
+  font-weight: bold;
+  margin-bottom: 14px;
+}
+
+input, select {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  background: white;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.search-row {
+  display: flex;
+  gap: 10px;
+}
+
+.search-row input {
+  flex: 1;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+.status {
+  font-size: 13px;
+  color: #777;
+  margin-top: 10px;
+}
+
+.result-count {
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.product-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.product-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 3px 10px rgba(37,99,235,0.08);
+}
+
+.product-category {
+  display: inline-block;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 5px 8px;
+  border-radius: 5px;
+  margin-bottom: 8px;
+}
+
+.product-name {
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.product-info {
+  font-size: 13px;
+  color: #777;
+  line-height: 1.7;
+}
+
+.price-area {
+  border-top: 1px solid #eee;
+  margin-top: 12px;
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.retail-price {
+  color: #777;
+  font-size: 13px;
+}
+
+.customer-price {
+  font-size: 21px;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+.detail-panel {
+  display: none;
+  border: 2px solid #2563eb;
+}
+
+.detail-name {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-item {
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 6px;
+}
+
+.detail-value {
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.final-price {
+  color: #2563eb;
+  font-size: 28px;
+}
+
+.empty {
+  text-align: center;
+  color: #888;
+  padding: 35px 10px;
+  background: white;
+  border-radius: 10px;
+  grid-column: 1 / -1;
+}
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: #f3f5f8;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 360px;
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.login-box h2 {
+  margin-top: 0;
+}
+
+.login-box input {
+  margin: 14px 0;
+  text-align: center;
+}
+
+.login-box button {
+  width: 100%;
+}
+
+.login-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 14px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .search-row {
+    flex-direction: column;
+  }
+
+  .search-row button {
+    width: 100%;
+  }
+
+  .results {
+    grid-template-columns: 1fr;
+  }
+
+  .product-name {
+    font-size: 15px;
+  }
+
+  .customer-price {
+    font-size: 20px;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>직원용 단가 조회</h2>
+    <p class="subtitle">비밀번호를 입력해주세요.</p>
+    <input type="password" id="passwordInput" placeholder="비밀번호">
+    <button onclick="login()">로그인</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <header>
+    <h1>거래처별 단가 조회</h1>
+    <div class="subtitle">거래처를 선택하고 상품의 적용 단가를 확인하세요.</div>
+  </header>
+
+  <div class="panel">
+    <div class="panel-title">1. 거래처 선택</div>
+    <select id="customerSelect" onchange="onCustomerChange()">
+      <option value="">거래처를 선택해주세요.</option>
+    </select>
+    <div class="status" id="customerStatus">거래처 정보를 불러오는 중입니다.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">2. 상품 검색</div>
+    <div class="search-row">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="상품명, 바코드, 상품분류 검색"
+        oninput="searchProducts()"
+      >
+      <button onclick="searchProducts()">검색</button>
+    </div>
+    <div class="status" id="productStatus">상품 정보를 불러오는 중입니다.</div>
+  </div>
+
+  <div class="panel detail-panel" id="detailPanel">
+    <div class="panel-title">선택한 상품</div>
+    <div class="detail-name" id="detailName"></div>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">상품분류</div>
+        <div class="detail-value" id="detailCategory"></div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">규격</div>
+        <div class="detail-value" id="detailSpec"></div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">소매가</div>
+        <div class="detail-value" id="detailRetail"></div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">거래처 단가율</div>
+        <div class="detail-value" id="detailRate"></div>
+      </div>
+      <div class="detail-item" style="grid-column:1 / -1;">
+        <div class="detail-label">적용 단가</div>
+        <div class="detail-value final-price" id="detailPrice"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-count" id="resultCount"></div>
+  <div class="results" id="results">
+    <div class="empty">거래처와 상품을 선택해주세요.</div>
+  </div>
+
+</div>
+
+<script>
+/* =========================
+   Google Sheets 설정
+========================= */
+
+const SHEET_ID = "19WlE1Iou4tsuqdb5qACWUheZeX3-F1ccNKs4_IucepQ";
+
+const PRODUCT_SHEET_NAME = "상품리스트";
+const CUSTOMER_SHEET_NAME = "거래처별 단가";
+
+/* 직원용 비밀번호 */
+const PASSWORD = "2221";
+
+/* =========================
+   데이터 변수
+========================= */
+
+let products = [];
+let customers = [];
+let selectedCustomer = "";
+
+let productsLoaded = false;
+let customersLoaded = false;
+
+/* =========================
+   로그인
+========================= */
+
+function login() {
+  const password = document.getElementById("passwordInput").value;
+
+  if (password === PASSWORD) {
+    document.getElementById("loginOverlay").style.display = "none";
+  } else {
+    document.getElementById("loginError").textContent =
+      "비밀번호가 올바르지 않습니다.";
+  }
+}
+
+document.getElementById("passwordInput")
+  .addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      login();
+    }
+  });
+
+/* =========================
+   Google Sheets JSONP
+========================= */
+
+function loadSheet(sheetName, callbackName) {
+  const url =
+    "https://docs.google.com/spreadsheets/d/" +
+    SHEET_ID +
+    "/gviz/tq?sheet=" +
+    encodeURIComponent(sheetName) +
+    "&tqx=out:json";
+
+  window.google = window.google || {};
+  window.google.visualization = window.google.visualization || {};
+  window.google.visualization.Query =
+    window.google.visualization.Query || {};
+
+  window.google.visualization.Query.setResponse = function(response) {
+    if (response.status === "error") {
+      console.error("시트 오류:", sheetName, response);
+      document.getElementById(callbackName).textContent =
+        sheetName + " 데이터를 불러오지 못했습니다.";
+      return;
+    }
+
+    const table = response.table;
+    const headers = table.cols.map(col => col.label.trim());
+
+    const rows = table.rows.map(row => {
+      const obj = {};
+
+      headers.forEach((header, index) => {
+        const cell = row.c[index];
+        obj[header] = cell ? cell.v : "";
+      });
+
+      return obj;
+    });
+
+    if (sheetName === PRODUCT_SHEET_NAME) {
+      products = rows;
+      productsLoaded = true;
+
+      document.getElementById("productStatus").textContent =
+        "상품 " + products.length.toLocaleString() + "개 불러오기 완료";
+    }
+
+    if (sheetName === CUSTOMER_SHEET_NAME) {
+      customers = rows;
+      customersLoaded = true;
+
+      renderCustomers();
+
+      document.getElementById("customerStatus").textContent =
+        "거래처 " + customers.length.toLocaleString() + "개 불러오기 완료";
+    }
+
+    searchProducts();
+  };
+
+  const script = document.createElement("script");
+  script.src = url;
+  script.onerror = function() {
+    document.getElementById(callbackName).textContent =
+      sheetName + " 데이터를 불러오지 못했습니다. 시트 공유 설정을 확인해주세요.";
+  };
+
+  document.body.appendChild(script);
+}
+
+/* =========================
+   데이터 초기화
+========================= */
+
+window.addEventListener("load", function() {
+  loadSheet(PRODUCT_SHEET_NAME, "productStatus");
+  loadSheet(CUSTOMER_SHEET_NAME, "customerStatus");
+});
+
+/* =========================
+   거래처 목록 표시
+========================= */
+
+function renderCustomers() {
+  const select = document.getElementById("customerSelect");
+
+  select.innerHTML =
+    '<option value="">거래처를 선택해주세요.</option>';
+
+  customers.forEach(customer => {
+    const name = String(customer["상품분류"] || "").trim();
+
+    if (!name) return;
+
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+
+    select.appendChild(option);
+  });
+}
+
+/* =========================
+   거래처 선택
+========================= */
+
+function onCustomerChange() {
+  selectedCustomer = document.getElementById("customerSelect").value;
+
+  document.getElementById("detailPanel").style.display = "none";
+
+  searchProducts();
+}
+
+/* =========================
+   숫자 변환 및 금액 표시
+========================= */
+
+function toNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return NaN;
+  }
+
+  const cleaned = String(value)
+    .replace(/,/g, "")
+    .replace(/%/g, "")
+    .trim();
+
+  return Number(cleaned);
+}
+
+function formatNumber(value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  return Math.round(value).toLocaleString("ko-KR") + "원";
+}
+
+/* =========================
+   거래처 단가율 조회
+========================= */
+
+function getCustomerRate(customerName, makerName) {
+  if (!customerName || !makerName) {
+    return NaN;
+  }
+
+  const customer = customers.find(row =>
+    String(row["상품분류"] || "").trim() === customerName
+  );
+
+  if (!customer) {
+    return NaN;
+  }
+
+  const maker = String(makerName).trim();
+
+  const rate = customer[maker];
+
+  return toNumber(rate);
+}
+
+/* =========================
+   적용 단가 계산
+   소매가 × 단가율 ÷ 100
+========================= */
+
+function calculatePrice(retailPrice, rate) {
+  const retail = toNumber(retailPrice);
+
+  if (!Number.isFinite(retail) || !Number.isFinite(rate)) {
+    return NaN;
+  }
+
+  return retail * rate / 100;
+}
+
+/* =========================
+   상품 검색
+========================= */
+
+function searchProducts() {
+  const keyword = document.getElementById("searchInput")
+    .value.trim().toLowerCase();
+
+  const resultsElement = document.getElementById("results");
+  const countElement = document.getElementById("resultCount");
+
+  if (!productsLoaded || !customersLoaded) {
+    resultsElement.innerHTML =
+      '<div class="empty">데이터를 불러오는 중입니다.</div>';
+    return;
+  }
+
+  if (!selectedCustomer) {
+    resultsElement.innerHTML =
+      '<div class="empty">먼저 거래처를 선택해주세요.</div>';
+
+    countElement.textContent = "";
+    return;
+  }
+
+  let filtered = products.filter(product => {
+    const barcode = String(product["바코드"] || "").toLowerCase();
+    const category = String(product["상품분류"] || "").toLowerCase();
+    const name = String(product["상품명"] || "").toLowerCase();
+
+    return (
+      barcode.includes(keyword) ||
+      category.includes(keyword) ||
+      name.includes(keyword)
+    );
+  });
+
+  /* 바코드 완전 일치 우선 */
+  if (keyword) {
+    const exactBarcode = filtered.filter(product =>
+      String(product["바코드"] || "").toLowerCase() === keyword
+    );
+
+    if (exactBarcode.length > 0) {
+      filtered = exactBarcode;
+    }
+  }
+
+  countElement.textContent =
+    "검색 결과 " + filtered.length.toLocaleString() + "개";
+
+  if (filtered.length === 0) {
+    resultsElement.innerHTML =
+      '<div class="empty">검색 결과가 없습니다.</div>';
+    return;
+  }
+
+  resultsElement.innerHTML = "";
+
+  filtered.forEach(product => {
+    const category = product["상품분류"] || "-";
+    const barcode = product["바코드"] || "-";
+    const name = product["상품명"] || "-";
+    const spec = product["규격"] || "-";
+    const retail = toNumber(product["소매가"]);
+
+    /* 메이커는 내부 계산에만 사용 */
+    const maker = product["메이커"] || "";
+
+    const rate = getCustomerRate(selectedCustomer, maker);
+    const price = calculatePrice(retail, rate);
+
+    const card = document.createElement("div");
+    card.className = "product-card";
+
+    const categoryElement = document.createElement("div");
+    categoryElement.className = "product-category";
+    categoryElement.textContent = category;
+
+    const nameElement = document.createElement("div");
+    nameElement.className = "product-name";
+    nameElement.textContent = name;
+
+    const infoElement = document.createElement("div");
+    infoElement.className = "product-info";
+    infoElement.textContent =
+      "바코드: " + barcode + "\n" +
+      "규격: " + spec;
+
+    infoElement.style.whiteSpace = "pre-line";
+
+    const priceArea = document.createElement("div");
+    priceArea.className = "price-area";
+
+    const retailElement = document.createElement("div");
+    retailElement.className = "retail-price";
+    retailElement.textContent =
+      "소매가 " + formatNumber(retail);
+
+    const customerPriceElement = document.createElement("div");
+    customerPriceElement.className = "customer-price";
+    customerPriceElement.textContent = formatNumber(price);
+
+    priceArea.appendChild(retailElement);
+    priceArea.appendChild(customerPriceElement);
+
+    card.appendChild(categoryElement);
+    card.appendChild(nameElement);
+    card.appendChild(infoElement);
+    card.appendChild(priceArea);
+
+    card.addEventListener("click", function() {
+      showProductDetail(product);
+    });
+
+    resultsElement.appendChild(card);
+  });
+}
+
+/* =========================
+   상품 상세 표시
+========================= */
+
+function showProductDetail(product) {
+  const maker = product["메이커"] || "";
+
+  const retail = toNumber(product["소매가"]);
+  const rate = getCustomerRate(selectedCustomer, maker);
+  const price = calculatePrice(retail, rate);
+
+  document.getElementById("detailName").textContent =
+    product["상품명"] || "-";
+
+  document.getElementById("detailCategory").textContent =
+    product["상품분류"] || "-";
+
+  document.getElementById("detailSpec").textContent =
+    product["규격"] || "-";
+
+  document.getElementById("detailRetail").textContent =
+    formatNumber(retail);
+
+  document.getElementById("detailRate").textContent =
+    Number.isFinite(rate) ? rate + "%" : "단가율 없음";
+
+  document.getElementById("detailPrice").textContent =
+    formatNumber(price);
+
+  document.getElementById("detailPanel").style.display = "block";
+
+  document.getElementById("detailPanel").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+</script>
+
+</body>
+</html>
+```
