@@ -65,11 +65,26 @@
     input {
       width: 100%;
       height: 46px;
+      min-height: 46px;
+      max-height: 46px;
       padding: 0 12px;
       border: 1px solid #d5d9df;
       border-radius: 8px;
       font-size: 16px;
       background: #fff;
+      box-sizing: border-box;
+    }
+
+    /* 거래처와 상품명 입력칸 크기 통일 */
+    #customerInput,
+    #searchInput {
+      width: 100%;
+      height: 46px;
+      min-height: 46px;
+      max-height: 46px;
+      padding: 0 12px;
+      box-sizing: border-box;
+      font-size: 16px;
     }
 
     input:focus {
@@ -133,9 +148,12 @@
       min-height: 18px;
     }
 
+    /* 상품 검색 입력칸과 검색 버튼 */
     .search-row {
       display: flex;
+      align-items: center;
       gap: 8px;
+      width: 100%;
     }
 
     .search-row input {
@@ -144,15 +162,27 @@
     }
 
     .search-row button {
+      width: 68px;
+      height: 38px;
+      min-width: 68px;
+      padding: 0 10px;
+      font-size: 13px;
+      border-radius: 7px;
       white-space: nowrap;
     }
 
+    /* 바코드 카메라 버튼 */
     .camera-button {
       display: none;
-      width: 100%;
-      margin-top: 10px;
+      width: 125px;
+      height: 34px;
+      padding: 0 10px;
+      margin-top: 8px;
+      margin-left: auto;
       background: #16a34a;
       color: white;
+      font-size: 12px;
+      border-radius: 7px;
     }
 
     #reader {
@@ -273,12 +303,24 @@
         display: block;
       }
 
+      /* 모바일에서도 입력칸과 검색 버튼을 가로로 배치 */
       .search-row {
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .search-row input {
+        flex: 1;
+        min-width: 0;
+        height: 46px;
       }
 
       .search-row button {
-        width: 100%;
+        width: 58px;
+        min-width: 58px;
+        height: 36px;
+        padding: 0 6px;
+        font-size: 12px;
       }
     }
   </style>
@@ -573,9 +615,7 @@
 
     window.currentCallback = null;
 
-    window.currentCallback = null;
     loadSheet(PRODUCT_GID, "handleProductResponse");
-
     loadSheet(CUSTOMER_GID, "handleCustomerResponse");
   }
 
