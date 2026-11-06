@@ -71,7 +71,12 @@ button {
 button:disabled { background: #aab5c5; cursor: not-allowed; }
 
 .search-button { min-width: 100px; align-self: flex-end; }
-.camera-button { min-width: 100px; align-self: flex-end; background: #263b57; }
+.camera-button {
+  min-width: 100px;
+  align-self: flex-end;
+  background: #263b57;
+  display: none;
+}
 
 .status {
   margin-top: 13px;
@@ -216,9 +221,7 @@ td.price { font-weight: bold; color: #205fc4; }
   border-radius: 9px;
 }
 
-#reader video {
-  border-radius: 9px;
-}
+#reader video { border-radius: 9px; }
 
 .scanner-status {
   font-size: 13px;
@@ -235,6 +238,7 @@ td.price { font-weight: bold; color: #205fc4; }
 
 .mobile-results { display: none; }
 
+/* 모바일 */
 @media (max-width: 650px) {
   body { padding: 18px 12px; }
   h1 { font-size: 23px; }
@@ -249,6 +253,7 @@ td.price { font-weight: bold; color: #205fc4; }
 
   input, select { height: 48px; font-size: 16px; }
   .search-button, .camera-button { width: 100%; height: 48px; }
+  .camera-button { display: block; }
   .status { font-size: 11px; }
   .result-header h2 { font-size: 17px; }
   .result-header { align-items: center; }
@@ -352,10 +357,15 @@ td.price { font-weight: bold; color: #205fc4; }
   <section class="panel">
     <div class="form-row">
       <div class="field">
-        <label for="customerSelect">거래처 선택</label>
-        <select id="customerSelect">
-          <option value="">거래처를 선택해 주세요.</option>
-        </select>
+        <label for="customerSearch">거래처 검색 및 선택</label>
+        <input
+          type="text"
+          id="customerSearch"
+          list="customerOptions"
+          placeholder="거래처 이름을 입력하세요."
+          autocomplete="off"
+        >
+        <datalist id="customerOptions"></datalist>
       </div>
     </div>
 
@@ -565,7 +575,7 @@ async function loadAllData() {
     customers = parseCustomers(customerTable);
     productLoaded = true;
     customerLoaded = true;
-    updateCustomerSelect();
+    updateCustomerOptions();
 
     status.className = "status success";
     status.textContent = "상품 " + products.length.toLocaleString("ko-KR") +
@@ -582,23 +592,28 @@ async function loadAllData() {
   }
 }
 
-function updateCustomerSelect() {
-  const select = document.getElementById("customerSelect");
-  const previousValue = select.value;
-  select.innerHTML = '<option value="">거래처를 선택해 주세요.</option>';
+/* 거래처 자동완성 목록 */
+function updateCustomerOptions() {
+  const datalist = document.getElementById("customerOptions");
+  const input = document.getElementById("customerSearch");
+  const previousValue = input.value;
+
+  datalist.innerHTML = "";
 
   customers.forEach(customer => {
     const option = document.createElement("option");
     option.value = customer.name;
-    option.textContent = customer.name;
-    select.appendChild(option);
+    datalist.appendChild(option);
   });
 
-  if (customers.some(c => c.name === previousValue)) select.value = previousValue;
+  if (customers.some(c => c.name === previousValue)) {
+    input.value = previousValue;
+  }
 }
 
+/* 반드시 정확한 거래처 이름을 선택해야 조회 */
 function getSelectedCustomer() {
-  const name = document.getElementById("customerSelect").value;
+  const name = document.getElementById("customerSearch").value.trim();
   return customers.find(customer => customer.name === name) || null;
 }
 
@@ -689,10 +704,13 @@ function searchProducts() {
     showEmpty("데이터를 불러오는 중입니다.");
     return;
   }
+
   if (!customer) {
-    showEmpty("거래처를 먼저 선택해 주세요.");
+    const typedName = document.getElementById("customerSearch").value.trim();
+    showEmpty(typedName ? "자동완성 목록에서 정확한 거래처를 선택해 주세요." : "거래처를 먼저 선택해 주세요.");
     return;
   }
+
   if (!query) {
     showEmpty("상품명 또는 바코드를 입력해 주세요.");
     return;
@@ -856,44 +874,48 @@ function login() {
   }
 }
 
+/* 이벤트 연결 */
 document.getElementById("loginButton").addEventListener("click", login);
+
 document.getElementById("passwordInput").addEventListener("keydown", event => {
   if (event.key === "Enter") login();
 });
 
 document.getElementById("searchButton").addEventListener("click", searchProducts);
+
 document.getElementById("searchInput").addEventListener("keydown", event => {
   if (event.key === "Enter") searchProducts();
 });
 
-document.getElementById("customerSelect").addEventListener("change", () => {
-  if (document.getElementById("searchInput").value.trim()) searchProducts();
+/* 거래처 선택 후 상품 검색 */
+document.getElementById("customerSearch").addEventListener("change", () => {
+  if (document.getElementById("searchInput").value.trim()) {
+    searchProducts();
+  }
+});
+
+document.getElementById("customerSearch").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    searchProducts();
+  }
 });
 
 document.getElementById("refreshButton").addEventListener("click", loadAllData);
 document.getElementById("cameraButton").addEventListener("click", startScanner);
 document.getElementById("closeScannerButton").addEventListener("click", stopScanner);
 
+/* 로그인 유지 */
 if (sessionStorage.getItem("productLogin") === "true") {
   document.getElementById("loginOverlay").classList.add("hidden");
   loadAllData();
 }
 
+/* 60초마다 자동 갱신 */
 setInterval(() => {
   if (sessionStorage.getItem("productLogin") === "true") loadAllData();
 }, AUTO_REFRESH_MS);
 </script>
-/* PC에서는 바코드 촬영 버튼 숨김 */
-.camera-button {
-  display: none;
-}
 
-/* 모바일에서만 표시 */
-@media (max-width: 650px) {
-  .camera-button {
-    display: block;
-    width: 100%;
-  }
-}
 </body>
 </html>
